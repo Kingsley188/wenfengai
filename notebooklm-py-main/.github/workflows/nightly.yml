@@ -1,0 +1,81 @@
+name: Nightly E2E Tests
+
+on:
+  schedule:
+    # Run at 6 AM UTC daily (10 PM PST / 1 AM EST)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Specific test to run (e.g., tests/e2e/test_downloads.py::TestDownloadReport)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Only run on main repo (not forks) due to secrets requirement
+    if: github.repository == 'teng-lin/notebooklm-py'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[all]"
+
+    - name: Get Playwright version
+      id: playwright-version
+      shell: bash
+      run: |
+        echo "version=$(pip show playwright | grep '^Version:' | cut -d' ' -f2)" >> $GITHUB_OUTPUT
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cache/ms-playwright
+          ~/AppData/Local/ms-playwright
+        key: playwright-${{ matrix.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browsers
+      run: playwright install chromium
+
+    - name: Install Playwright system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: playwright install-deps
+
+    - name: Run E2E tests
+      env:
+        NOTEBOOKLM_AUTH_JSON: ${{ secrets.NOTEBOOKLM_AUTH_JSON }}
+        NOTEBOOKLM_READ_ONLY_NOTEBOOK_ID: ${{ secrets.NOTEBOOKLM_READ_ONLY_NOTEBOOK_ID }}
+        NOTEBOOKLM_GENERATION_NOTEBOOK_ID: ${{ secrets.NOTEBOOKLM_GENERATION_NOTEBOOK_ID }}
+      shell: bash
+      run: |
+        TEST_FILTER="${{ inputs.test_filter }}"
+        if [ -n "$TEST_FILTER" ]; then
+          # Run specific test(s) when filter provided
+          pytest "$TEST_FILTER" -s -v --tb=short --reruns 2 --reruns-delay 30
+        elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          # Linux: run all E2E tests except variants
+          pytest tests/e2e -m "not variants" -s -v --tb=short --reruns 2 --reruns-delay 30
+        else
+          # Windows: run only read-only tests (safer, avoids write operations)
+          pytest tests/e2e -m "readonly and not variants" -s -v --tb=short --reruns 2 --reruns-delay 30
+        fi
