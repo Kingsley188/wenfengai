@@ -14,6 +14,7 @@ from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -25,6 +26,11 @@ app = FastAPI(
     description="调用 NotebookLM API 生成 PPT/PDF",
     version="0.1.0"
 )
+
+# Static files for generated PDFs
+public_dir = Path(__file__).parent / "public" / "generated"
+public_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/generated", StaticFiles(directory=public_dir), name="generated")
 
 # CORS 配置
 app.add_middleware(
@@ -148,6 +154,9 @@ async def process_generation(
         from notebooklm import NotebookLMClient
         
         async with await NotebookLMClient.from_storage() as client:
+            # 0. 强制设置输出语言为中文
+            await client.settings.set_output_language("zh_Hans")
+            
             # 1. 创建笔记本
             tasks[task_id].progress = 20
             nb = await client.notebooks.create(title)
@@ -159,7 +168,10 @@ async def process_generation(
             
             # 3. 生成 Slide Deck
             tasks[task_id].progress = 60
-            status = await client.artifacts.generate_slide_deck(nb.id)
+            status = await client.artifacts.generate_slide_deck(
+                nb.id,
+                instructions="请生成一份详细的演示文稿，使用简体中文，包含丰富的内容和专业的结构。"
+            )
             
             # 4. 等待生成完成（最多 10 分钟）
             tasks[task_id].progress = 70
@@ -179,8 +191,6 @@ async def process_generation(
             tasks[task_id].progress = 95
             
             # 临时：将文件复制到 public 目录
-            public_dir = Path(__file__).parent.parent / "public" / "generated"
-            public_dir.mkdir(parents=True, exist_ok=True)
             public_path = public_dir / f"{task_id}.pdf"
             
             import shutil
