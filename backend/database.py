@@ -17,7 +17,10 @@ if "sqlite" in SQLALCHEMY_DATABASE_URL:
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args=connect_args,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=5,
+    max_overflow=10
 )
 
 # 创建 SessionLocal 类
