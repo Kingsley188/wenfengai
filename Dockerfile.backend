@@ -15,24 +15,17 @@ COPY backend/requirements.txt .
 # 安装 Python 依赖
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 安装 notebooklm-py
+# 安装 notebooklm-py（带浏览器支持）
 RUN pip install "notebooklm-py[browser]"
 RUN playwright install chromium --with-deps
 
 # 复制后端代码
 COPY backend/ .
 
-# 创建启动脚本
-RUN echo '#!/bin/bash\n\
-mkdir -p /root/.notebooklm\n\
-if [ -n "$NOTEBOOKLM_AUTH" ]; then\n\
-  echo "$NOTEBOOKLM_AUTH" | base64 -d > /root/.notebooklm/storage_state.json\n\
-  echo "✅ NotebookLM 认证已配置"\n\
-fi\n\
-exec uvicorn main:app --host 0.0.0.0 --port 8000' > /app/start.sh && chmod +x /app/start.sh
-
 # 暴露端口
 EXPOSE 8000
 
 # 启动命令
-CMD ["/app/start.sh"]
+# notebooklm-py 原生支持 NOTEBOOKLM_AUTH_JSON 环境变量
+# 无需额外的启动脚本处理
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

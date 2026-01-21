@@ -79,38 +79,42 @@ export default function NotebookPage() {
   }, [user, id]);
 
   const fetchNotebook = async () => {
+    // 演示模式：从 localStorage 读取或创建默认
     try {
-      const { data, error } = await supabase
-        .from('notebooks')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+      const stored = localStorage.getItem('demo_notebooks');
+      let notebooks = stored ? JSON.parse(stored) : [];
+      let notebook = notebooks.find((n: Notebook) => n.id === id);
 
-      if (error) throw error;
-      if (!data) {
-        navigate('/dashboard');
-        return;
+      if (!notebook) {
+        // 如果没找到，创建一个默认笔记本
+        notebook = {
+          id: id,
+          title: '新笔记本',
+          description: null,
+          status: 'draft',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        notebooks.push(notebook);
+        localStorage.setItem('demo_notebooks', JSON.stringify(notebooks));
       }
-      setNotebook(data);
-      setTitleInput(data.title);
+
+      setNotebook(notebook);
+      setTitleInput(notebook.title);
     } catch (error) {
       console.error('Error fetching notebook:', error);
-      navigate('/dashboard');
     } finally {
       setLoading(false);
     }
   };
 
   const fetchFiles = async () => {
+    // 演示模式：从 localStorage 读取文件列表
     try {
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('notebook_id', id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setFiles(data || []);
+      const stored = localStorage.getItem(`demo_files_${id}`);
+      if (stored) {
+        setFiles(JSON.parse(stored));
+      }
     } catch (error) {
       console.error('Error fetching files:', error);
     }
@@ -133,6 +137,9 @@ export default function NotebookPage() {
     }
   };
 
+  // 保存上传的原始文件，用于后续生成
+  const [uploadedRawFiles, setUploadedRawFiles] = useState<File[]>([]);
+
   const handleFiles = async (fileList: FileList | File[]) => {
     if (!user || !id) return;
 
@@ -142,33 +149,30 @@ export default function NotebookPage() {
     setUploading(true);
 
     try {
-      for (const file of filesToUpload) {
-        const filePath = `${user.id}/${id}/${Date.now()}-${file.name}`;
+      // 演示模式：直接保存文件信息到 localStorage
+      const newFiles: UploadedFile[] = filesToUpload.map((file, index) => ({
+        id: `file-${Date.now()}-${index}`,
+        notebook_id: id!,
+        file_name: file.name,
+        file_url: URL.createObjectURL(file), // 创建临时 URL
+        file_type: file.type,
+        file_size: file.size,
+        created_at: new Date().toISOString(),
+      }));
 
-        const { error: uploadError } = await supabase.storage
-          .from('uploads')
-          .upload(filePath, file);
+      const updatedFiles = [...files, ...newFiles];
+      setFiles(updatedFiles);
 
-        if (uploadError) throw uploadError;
+      // 保存原始文件用于生成
+      setUploadedRawFiles(prev => [...prev, ...filesToUpload]);
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('uploads')
-          .getPublicUrl(filePath);
+      // 保存到 localStorage（不含 blob URL）
+      const filesForStorage = updatedFiles.map(f => ({
+        ...f,
+        file_url: '' // 不保存 blob URL
+      }));
+      localStorage.setItem(`demo_files_${id}`, JSON.stringify(filesForStorage));
 
-        const { error: dbError } = await supabase
-          .from('files')
-          .insert({
-            notebook_id: id,
-            file_name: file.name,
-            file_url: publicUrl,
-            file_type: file.type,
-            file_size: file.size,
-          });
-
-        if (dbError) throw dbError;
-      }
-
-      fetchFiles();
       toast({
         title: '上传成功',
         description: `已成功上传 ${filesToUpload.length} 个文件`,
@@ -311,7 +315,7 @@ export default function NotebookPage() {
   };
 
   const handleGeneratePPT = async () => {
-    if (files.length === 0) {
+    if (uploadedRawFiles.length === 0 && files.length === 0) {
       toast({
         title: '请先上传文件',
         description: '请上传 PDF、Word 或图片等文件后再生成',
@@ -326,11 +330,9 @@ export default function NotebookPage() {
       // 1. 创建 FormData 并添加文件
       const formData = new FormData();
 
-      for (const file of files) {
-        // 从 Supabase Storage 获取文件
-        const response = await fetch(file.file_url);
-        const blob = await response.blob();
-        formData.append('files', blob, file.file_name);
+      // 使用本地上传的原始文件
+      for (const file of uploadedRawFiles) {
+        formData.append('files', file, file.name);
       }
 
       // 2. 调用后端 API
@@ -341,7 +343,8 @@ export default function NotebookPage() {
       });
 
       if (!res.ok) {
-        throw new Error('生成请求失败');
+        const errorText = await res.text();
+        throw new Error(errorText || '生成请求失败');
       }
 
       const data = await res.json();
@@ -352,13 +355,7 @@ export default function NotebookPage() {
         started_at: new Date().toISOString(),
       }));
 
-      // 4. 更新数据库状态
-      await supabase
-        .from('notebooks')
-        .update({ status: 'generating' })
-        .eq('id', id);
-
-      // 5. 跳转到结果页
+      // 4. 跳转到结果页
       navigate(`/notebook/${id}/result?task_id=${data.task_id}`);
 
     } catch (error) {

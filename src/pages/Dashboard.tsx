@@ -4,11 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  FileText, 
-  Clock, 
-  Sparkles, 
+import {
+  Plus,
+  FileText,
+  Clock,
+  Sparkles,
   Loader2,
   Trash2,
   MoreVertical
@@ -42,7 +42,7 @@ export default function Dashboard() {
     if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (user) {
@@ -51,14 +51,12 @@ export default function Dashboard() {
   }, [user]);
 
   const fetchNotebooks = async () => {
+    // 演示模式：从 localStorage 读取
     try {
-      const { data, error } = await supabase
-        .from('notebooks')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      setNotebooks(data || []);
+      const stored = localStorage.getItem('demo_notebooks');
+      if (stored) {
+        setNotebooks(JSON.parse(stored));
+      }
     } catch (error) {
       console.error('Error fetching notebooks:', error);
     } finally {
@@ -71,17 +69,21 @@ export default function Dashboard() {
     setCreating(true);
 
     try {
-      const { data, error } = await supabase
-        .from('notebooks')
-        .insert({
-          user_id: user.id,
-          title: '未命名笔记本',
-        })
-        .select()
-        .single();
+      // 演示模式：创建本地笔记本
+      const newNotebook: Notebook = {
+        id: `demo-${Date.now()}`,
+        title: '未命名笔记本',
+        description: null,
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
-      navigate(`/notebook/${data.id}`);
+      const updatedNotebooks = [newNotebook, ...notebooks];
+      localStorage.setItem('demo_notebooks', JSON.stringify(updatedNotebooks));
+      setNotebooks(updatedNotebooks);
+
+      navigate(`/notebook/${newNotebook.id}`);
     } catch (error) {
       console.error('Error creating notebook:', error);
       toast({
@@ -155,7 +157,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-24 pb-12 px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
@@ -164,7 +166,7 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold mb-2">我的笔记本</h1>
               <p className="text-muted-foreground">管理您的 PPT 创作项目</p>
             </div>
-            <Button 
+            <Button
               onClick={createNotebook}
               disabled={creating}
               className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
@@ -184,7 +186,7 @@ export default function Dashboard() {
               <Sparkles className="w-5 h-5 text-accent" />
               <h2 className="font-semibold">快速开始</h2>
             </div>
-            <div 
+            <div
               onClick={createNotebook}
               className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-8 border border-accent/20 cursor-pointer hover-lift group"
             >
@@ -219,7 +221,7 @@ export default function Dashboard() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteNotebook(notebook.id);
@@ -232,19 +234,19 @@ export default function Dashboard() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    
+
                     <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4">
                       <FileText className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    
+
                     <h3 className="font-semibold mb-2 pr-8">{notebook.title}</h3>
-                    
+
                     {notebook.description && (
                       <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                         {notebook.description}
                       </p>
                     )}
-                    
+
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
                       <div className="flex items-center gap-1 text-muted-foreground text-sm">
                         <Clock className="w-3.5 h-3.5" />
@@ -263,7 +265,7 @@ export default function Dashboard() {
               </div>
               <h3 className="text-xl font-semibold mb-2">还没有笔记本</h3>
               <p className="text-muted-foreground mb-6">创建您的第一个笔记本，开始 AI 智能创作</p>
-              <Button 
+              <Button
                 onClick={createNotebook}
                 disabled={creating}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"

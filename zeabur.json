@@ -1,0 +1,16 @@
+{
+    "$schema": "https://zeabur.com/schemas/zeabur-json-schema.json",
+    "build": {
+        "type": "dockerfile",
+        "dockerfile": "Dockerfile.backend"
+    },
+    "ports": [
+        8000
+    ],
+    "env": {
+        "NOTEBOOKLM_AUTH_JSON": {
+            "description": "NotebookLM 认证 JSON（从 ~/.notebooklm/storage_state.json 复制完整内容）",
+            "required": false
+        }
+    }
+}
