@@ -2,8 +2,11 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
+// Ensure API_URL doesn't end with /api, as endpoints usually include it
+const BASE_URL = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
+
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: BASE_URL,
 });
 
 // 请求拦截器：添加 JWT Token
