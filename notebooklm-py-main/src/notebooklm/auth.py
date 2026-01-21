@@ -605,8 +605,9 @@ async def fetch_tokens(cookies: dict[str, str]) -> tuple[str, str]:
     cookie_header = "; ".join(f"{k}={v}" for k, v in cookies.items())
 
     async with httpx.AsyncClient() as client:
+        homepage_url = os.getenv("NOTEBOOKLM_HOMEPAGE_URL", "https://notebooklm.google.com/")
         response = await client.get(
-            "https://notebooklm.google.com/",
+            homepage_url,
             headers={"Cookie": cookie_header},
             follow_redirects=True,
             timeout=30.0,

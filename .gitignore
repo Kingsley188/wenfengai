@@ -23,10 +23,14 @@ npm-cache
 .pytest_cache/
 .ruff_cache/
 .venv/
+venv/
 backend/.venv/
 
 # Generated assets
 public/generated/
+backend/public/generated/
+static/output/
+*.pdf
 
 # Editor directories and files
 .vscode/*
@@ -37,4 +41,13 @@ public/generated/
 *.ntvs*
 *.njsproj
 *.sln
+*.dw
 *.sw?
+
+# Database
+*.db
+
+# Large Test Data
+notebooklm-py-main/test_output.pdf
+notebooklm-py-main/tests/cassettes/
+WARP.md

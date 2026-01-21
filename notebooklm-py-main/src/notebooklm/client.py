@@ -150,7 +150,8 @@ class NotebookLMClient:
             ValueError: If token extraction fails (page structure may have changed).
         """
         http_client = self._core.get_http_client()
-        response = await http_client.get("https://notebooklm.google.com/")
+        homepage_url = os.getenv("NOTEBOOKLM_HOMEPAGE_URL", "https://notebooklm.google.com/")
+        response = await http_client.get(homepage_url)
         response.raise_for_status()
 
         # Check for redirect to login page

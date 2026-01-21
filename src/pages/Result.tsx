@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
+
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -62,25 +63,16 @@ export default function Result() {
     if (!taskId) return;
 
     try {
-      const res = await fetch(`${apiUrl}/api/status/${taskId}`);
-      if (!res.ok) {
-        throw new Error('无法获取任务状态');
-      }
-      const data: TaskStatus = await res.json();
+      const res = await api.get(`/api/status/${taskId}`);
+      const data: TaskStatus = res.data;
       setTaskStatus(data);
 
       if (data.status === 'completed' && data.result_url) {
         // 生成完成，设置 PDF URL
         setPdfUrl(`${apiUrl}${data.result_url}`);
 
-        // 更新数据库
-        await supabase
-          .from('notebooks')
-          .update({
-            status: 'completed',
-            result_pdf_url: `${apiUrl}${data.result_url}`
-          })
-          .eq('id', id);
+        // 生成完成，设置 PDF URL
+        setPdfUrl(`${apiUrl}${data.result_url}`);
       }
     } catch (error) {
       console.error('轮询状态失败:', error);
@@ -98,22 +90,18 @@ export default function Result() {
 
   const fetchNotebook = async () => {
     try {
-      const { data, error } = await supabase
-        .from('notebooks')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+      const res = await api.get(`/api/status/${id}`);
+      const data = res.data;
 
-      if (error) throw error;
-      if (!data) {
-        navigate('/dashboard');
-        return;
-      }
-      setNotebook(data);
+      setNotebook({
+        id: data.task_id,
+        title: data.title,
+        status: data.status,
+        result_pdf_url: data.result_url && data.result_url.startsWith('http') ? data.result_url : (data.result_url ? `${apiUrl}${data.result_url}` : null)
+      });
 
-      // 如果已有 PDF URL，直接显示
-      if (data.result_pdf_url) {
-        setPdfUrl(data.result_pdf_url);
+      if (data.result_url) {
+        setPdfUrl(data.result_url.startsWith('http') ? data.result_url : `${apiUrl}${data.result_url}`);
       }
     } catch (error) {
       console.error('Error fetching notebook:', error);

@@ -1588,12 +1588,16 @@ class ArtifactsAPI:
         """
         # POLL_STUDIO RPC is unreliable - use list as fallback
         params = [task_id, notebook_id, [2]]
-        result = await self._core.rpc_call(
-            RPCMethod.POLL_STUDIO,
-            params,
-            source_path=f"/notebook/{notebook_id}",
-            allow_null=True,
-        )
+        try:
+            result = await self._core.rpc_call(
+                RPCMethod.POLL_STUDIO,
+                params,
+                source_path=f"/notebook/{notebook_id}",
+                allow_null=True,
+            )
+        except Exception as e:
+            logger.warning(f"POLL_STUDIO failed for task {task_id}: {e}. Falling back to list.")
+            result = None
 
         if result is None:
             artifacts_data = await self._list_raw(notebook_id)

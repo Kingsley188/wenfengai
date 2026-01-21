@@ -88,7 +88,12 @@ def register_session_commands(cli):
         default=None,
         help="Where to save storage_state.json (default: $NOTEBOOKLM_HOME/storage_state.json)",
     )
-    def login(storage):
+    @click.option(
+        "--auto",
+        is_flag=True,
+        help="Automatically save and exit once logged in (no ENTER required)",
+    )
+    def login(storage, auto):
         """Log in to NotebookLM via browser.
 
         Opens a browser window for Google login. After logging in,
@@ -147,9 +152,24 @@ def register_session_commands(cli):
             console.print("\n[bold green]Instructions:[/bold green]")
             console.print("1. Complete the Google login in the browser window")
             console.print("2. Wait until you see the NotebookLM homepage")
-            console.print("3. Press [bold]ENTER[/bold] here to save and close\n")
-
-            input("[Press ENTER when logged in] ")
+            
+            if auto:
+                console.print("[yellow]Auto-save enabled. Waiting for homepage...[/yellow]")
+                # Wait for the URL to change to the homepage and stabilize
+                try:
+                    # Homepage should have an element like 'Featured notebooks' or just the URL
+                    page.wait_for_url(lambda url: "notebooklm.google.com" in url and "/v3/signin" not in url, timeout=300000)
+                    # Give it a tiny bit more time for cookies to settle
+                    page.wait_for_timeout(2000)
+                    console.print("[green]Homepage detected! Saving session...[/green]")
+                except Exception as e:
+                    console.print(f"[red]Auto-save failed or timed out: {e}[/red]")
+                    if not click.confirm("Proceed anyway?"):
+                        context.close()
+                        raise SystemExit(1)
+            else:
+                console.print("3. Press [bold]ENTER[/bold] here to save and close\n")
+                input("[Press ENTER when logged in] ")
 
             current_url = page.url
             if "notebooklm.google.com" not in current_url:

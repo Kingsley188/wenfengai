@@ -28,8 +28,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:8000}
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:8000}
     container_name: wenfeng-frontend
     restart: unless-stopped
     ports:
@@ -37,5 +36,20 @@ services:
     depends_on:
       - backend
 
+  db:
+    image: mysql:8.0
+    container_name: wenfeng-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wenfengai
+      MYSQL_USER: wenfeng
+      MYSQL_PASSWORD: wenfengpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
 volumes:
   generated:
+  db_data:

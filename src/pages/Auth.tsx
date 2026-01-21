@@ -35,11 +35,12 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, displayName);
+        // signUp(username, password, email)
+        const { error } = await signUp(displayName, password, email);
         if (error) {
           toast({
             title: '注册失败',
-            description: error.message,
+            description: error.message || '请重试',
             variant: 'destructive',
           });
         } else {
@@ -50,11 +51,12 @@ export default function Auth() {
           navigate('/dashboard');
         }
       } else {
-        const { error } = await signIn(email, password);
+        // signIn(username, password)
+        const { error } = await signIn(displayName, password);
         if (error) {
           toast({
             title: '登录失败',
-            description: error.message,
+            description: '用户名或密码错误',
             variant: 'destructive',
           });
         } else {
@@ -79,8 +81,8 @@ export default function Auth() {
       {/* Left Panel - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
         <div className="max-w-md w-full mx-auto">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -102,32 +104,32 @@ export default function Auth() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="displayName">昵称</Label>
-                <Input
-                  id="displayName"
-                  type="text"
-                  placeholder="输入您的昵称"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="h-12 rounded-xl"
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="username">用户名</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="设置用户名"
+                value={displayName} // repurposing 'displayName' state as 'username' to minimize diff
+                onChange={(e) => setDisplayName(e.target.value)}
                 required
                 className="h-12 rounded-xl"
               />
             </div>
+
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="email">邮箱 (可选)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>
@@ -143,8 +145,8 @@ export default function Auth() {
               />
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading}
               className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground text-lg"
             >
@@ -164,7 +166,7 @@ export default function Auth() {
               onClick={() => setIsSignUp(!isSignUp)}
               className="ml-2 text-accent hover:underline font-medium"
             >
-              {isSignUp ? '登录' : '注册'}
+              {isSignUp ? '注册' : '登录'}
             </button>
           </p>
         </div>

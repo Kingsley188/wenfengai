@@ -1,11 +1,19 @@
 """RPC types and constants for NotebookLM API."""
 
+import os
+
 from enum import Enum
 
 # NotebookLM API endpoints
-BATCHEXECUTE_URL = "https://notebooklm.google.com/_/LabsTailwindUi/data/batchexecute"
-QUERY_URL = "https://notebooklm.google.com/_/LabsTailwindUi/data/google.internal.labs.tailwind.orchestration.v1.LabsTailwindOrchestrationService/GenerateFreeFormStreamed"
-UPLOAD_URL = "https://notebooklm.google.com/upload/_/"
+BATCHEXECUTE_URL = os.getenv(
+    "NOTEBOOKLM_BATCHEXECUTE_URL",
+    "https://notebooklm.google.com/_/LabsTailwindUi/data/batchexecute",
+)
+QUERY_URL = os.getenv(
+    "NOTEBOOKLM_QUERY_URL",
+    "https://notebooklm.google.com/_/LabsTailwindUi/data/google.internal.labs.tailwind.orchestration.v1.LabsTailwindOrchestrationService/GenerateFreeFormStreamed",
+)
+UPLOAD_URL = os.getenv("NOTEBOOKLM_UPLOAD_URL", "https://notebooklm.google.com/upload/_/")
 
 
 class RPCMethod(str, Enum):
