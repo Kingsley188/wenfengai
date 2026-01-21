@@ -1,0 +1,38 @@
+# 后端 Dockerfile
+FROM python:3.11-slim
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 安装 notebooklm-py 和 playwright
+RUN pip install "notebooklm-py[browser]"
+RUN playwright install chromium --with-deps
+
+# 复制后端代码
+COPY . .
+
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+mkdir -p /root/.notebooklm\n\
+if [ -n "$NOTEBOOKLM_AUTH" ]; then\n\
+  echo "$NOTEBOOKLM_AUTH" | base64 -d > /root/.notebooklm/storage_state.json\n\
+  echo "✅ NotebookLM 认证已配置"\n\
+fi\n\
+exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令
+CMD ["/app/start.sh"]

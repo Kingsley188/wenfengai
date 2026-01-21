@@ -1,16 +1,24 @@
 {
-    "name": "wenfengai-backend",
-    "type": "docker",
+    "$schema": "https://zeabur.com/schemas/zeabur-json-schema.json",
     "build": {
-        "dockerfile": "Dockerfile.backend"
+        "type": "dockerfile",
+        "dockerfile": "Dockerfile"
     },
-    "runtime": {
-        "port": 8000
-    },
+    "ports": [
+        8000
+    ],
     "env": {
+        "DATABASE_URL": {
+            "description": "MySQL 数据库连接字符串",
+            "required": true
+        },
+        "SECRET_KEY": {
+            "description": "JWT 密钥",
+            "required": false
+        },
         "NOTEBOOKLM_AUTH": {
-            "required": true,
-            "description": "NotebookLM 认证文件内容 (base64 编码)"
+            "description": "NotebookLM 认证文件内容 (base64 编码)",
+            "required": false
         }
     }
 }
