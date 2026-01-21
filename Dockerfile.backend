@@ -22,11 +22,17 @@ RUN playwright install chromium --with-deps
 # 复制后端代码
 COPY backend/ .
 
-# 创建 notebooklm 配置目录
-RUN mkdir -p /root/.notebooklm
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+mkdir -p /root/.notebooklm\n\
+if [ -n "$NOTEBOOKLM_AUTH" ]; then\n\
+  echo "$NOTEBOOKLM_AUTH" | base64 -d > /root/.notebooklm/storage_state.json\n\
+  echo "✅ NotebookLM 认证已配置"\n\
+fi\n\
+exec uvicorn main:app --host 0.0.0.0 --port 8000' > /app/start.sh && chmod +x /app/start.sh
 
 # 暴露端口
 EXPOSE 8000
 
 # 启动命令
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/start.sh"]

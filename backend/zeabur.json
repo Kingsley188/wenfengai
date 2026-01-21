@@ -1,0 +1,16 @@
+{
+    "name": "wenfengai-backend",
+    "type": "docker",
+    "build": {
+        "dockerfile": "Dockerfile.backend"
+    },
+    "runtime": {
+        "port": 8000
+    },
+    "env": {
+        "NOTEBOOKLM_AUTH": {
+            "required": true,
+            "description": "NotebookLM 认证文件内容 (base64 编码)"
+        }
+    }
+}
