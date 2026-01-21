@@ -75,7 +75,7 @@ export default function Dashboard() {
 
   const fetchNbStatus = async () => {
     try {
-      const res = await api.get('/api/auth/notebooklm/status');
+      const res = await api.get('/auth/notebooklm/status');
       setNbConnected(res.data.is_connected);
       setAccountInfo(res.data.account_info);
     } catch (err) {
@@ -85,7 +85,7 @@ export default function Dashboard() {
 
   const fetchNotebooks = async () => {
     try {
-      const res = await api.get('/api/tasks');
+      const res = await api.get('/tasks');
       const mapped = res.data.map(mapTaskToNotebook);
       setNotebooks(mapped);
     } catch (error) {
@@ -101,7 +101,7 @@ export default function Dashboard() {
   const handleLinkNotebookLM = async () => {
     setLinking(true);
     try {
-      await api.post('/api/auth/notebooklm/login');
+      await api.post('/auth/notebooklm/login');
       toast({
         title: '正在启动 Google 登录',
         description: '请在本地弹出的浏览器窗口中完成 Google 登录。',
@@ -109,7 +109,7 @@ export default function Dashboard() {
 
       // Poll for status or just wait
       const checkStatus = setInterval(async () => {
-        const res = await api.get('/api/auth/notebooklm/status');
+        const res = await api.get('/auth/notebooklm/status');
         if (res.data.is_connected) {
           setNbConnected(true);
           setLinking(false);

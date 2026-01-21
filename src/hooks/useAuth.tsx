@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // 设置 Token 到请求头 (api.ts 中也有拦截器，这里是双重保障或初始化)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const res = await api.get('/api/auth/me');
+      const res = await api.get('/auth/me');
       setUser(res.data);
     } catch (err) {
       console.error("Failed to fetch user", err);
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       formData.append('username', username);
       formData.append('password', password);
 
-      const res = await api.post('/api/auth/token', formData);
+      const res = await api.post('/auth/token', formData);
       const token = res.data.access_token;
 
       localStorage.setItem('token', token);
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUp = async (username: string, password: string, email: string = "") => {
     try {
-      await api.post('/api/auth/register', { username, password, email });
+      await api.post('/auth/register', { username, password, email });
       // 注册成功后自动登录
       return signIn(username, password);
     } catch (err: any) {

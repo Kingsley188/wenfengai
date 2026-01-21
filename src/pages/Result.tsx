@@ -63,7 +63,7 @@ export default function Result() {
     if (!taskId) return;
 
     try {
-      const res = await api.get(`/api/status/${taskId}`);
+      const res = await api.get(`/status/${taskId}`);
       const data: TaskStatus = res.data;
       setTaskStatus(data);
 
@@ -90,7 +90,7 @@ export default function Result() {
 
   const fetchNotebook = async () => {
     try {
-      const res = await api.get(`/api/status/${id}`);
+      const res = await api.get(`/status/${id}`);
       const data = res.data;
 
       setNotebook({
