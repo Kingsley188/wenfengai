@@ -13,7 +13,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -64,6 +64,13 @@ class GenerateRequest(BaseModel):
 async def health_check():
     """健康检查"""
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/test")
+async def test_page():
+    """测试页面 - 直接测试 NotebookLM 生成"""
+    return FileResponse(Path(__file__).parent / "test_page.html")
+
 
 
 @app.post("/api/generate-slides")
@@ -161,10 +168,11 @@ async def process_generation(
             tasks[task_id].progress = 20
             nb = await client.notebooks.create(title)
             
-            # 2. 添加文件作为源
+            # 2. 添加文件作为源 (使用 wait=True 等待处理完成)
             for i, file_path in enumerate(file_paths):
                 tasks[task_id].progress = 20 + int(30 * (i + 1) / len(file_paths))
-                await client.sources.add_file(nb.id, Path(file_path))
+                # wait=True 确保文件处理完成后再继续，避免 "Slide Deck generation failed"
+                await client.sources.add_file(nb.id, Path(file_path), wait=True, wait_timeout=180)
             
             # 3. 生成 Slide Deck
             tasks[task_id].progress = 60

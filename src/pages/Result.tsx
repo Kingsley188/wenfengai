@@ -284,11 +284,12 @@ export default function Result() {
       </header>
 
       {/* PDF Preview */}
-      <div className="flex-1 bg-secondary/30 p-4">
+      <div className="flex-1 bg-secondary/30 p-4" style={{ minHeight: 'calc(100vh - 64px)' }}>
         {pdfUrl ? (
           <iframe
             src={pdfUrl}
-            className="w-full h-full rounded-lg border border-border bg-white"
+            className="w-full rounded-lg border border-border bg-white"
+            style={{ height: 'calc(100vh - 96px)' }}
             title="PDF Preview"
           />
         ) : (

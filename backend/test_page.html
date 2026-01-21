@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotebookLM 生成测试</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #fff;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drop-zone {
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+    }
+    .drop-zone input { display: none; }
+    .file-list {
+      margin-top: 16px;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .file-item .name { flex: 1; font-size: 14px; }
+    .file-item .size { color: #888; font-size: 12px; }
+    .file-item .remove {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 12px;
+      display: none;
+    }
+    .status.show { display: block; }
+    .status.info { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .status.success { background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.3); }
+    .status.error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .progress-bar {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      transition: width 0.3s;
+    }
+    .download-link {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 12px 24px;
+      background: #22c55e;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 NotebookLM 生成测试</h1>
+    <p class="subtitle">直接测试 NotebookLM Slide Deck 生成流程</p>
+
+    <div class="card">
+      <h2>📄 上传文件</h2>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
+        <p>拖拽文件到此处，或点击选择</p>
+        <p style="color:#888;font-size:12px;margin-top:8px">支持 PDF、Word、图片</p>
+      </div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ 设置</h2>
+      <label style="display:block;margin-bottom:8px;font-size:14px;color:#888">PPT 标题</label>
+      <input type="text" id="titleInput" value="测试 PPT 生成" placeholder="输入标题"
+        style="width:100%;padding:12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:14px">
+    </div>
+
+    <button class="btn btn-primary" id="generateBtn" disabled>
+      ✨ 开始生成 Slide Deck
+    </button>
+
+    <div class="status" id="status">
+      <div id="statusText"></div>
+      <div class="progress-bar" id="progressBar" style="display:none">
+        <div class="fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div id="downloadContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const generateBtn = document.getElementById('generateBtn');
+    const titleInput = document.getElementById('titleInput');
+    const status = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const downloadContainer = document.getElementById('downloadContainer');
+
+    let selectedFiles = [];
+
+    // 拖拽处理
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function handleFiles(files) {
+      for (const file of files) {
+        selectedFiles.push(file);
+      }
+      renderFileList();
+    }
+
+    function renderFileList() {
+      fileList.innerHTML = selectedFiles.map((file, i) => `
+        <div class="file-item">
+          <span class="name">${file.name}</span>
+          <span class="size">${formatSize(file.size)}</span>
+          <button class="remove" onclick="removeFile(${i})">×</button>
+        </div>
+      `).join('');
+      generateBtn.disabled = selectedFiles.length === 0;
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function showStatus(message, type = 'info') {
+      status.className = 'status show ' + type;
+      statusText.innerHTML = message;
+    }
+
+    // 生成处理
+    generateBtn.addEventListener('click', async () => {
+      if (selectedFiles.length === 0) return;
+
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<span class="spinner"></span>上传中...';
+      progressBar.style.display = 'block';
+      downloadContainer.innerHTML = '';
+
+      try {
+        // 1. 上传文件并启动生成
+        showStatus('📤 正在上传文件并启动生成...', 'info');
+        progressFill.style.width = '10%';
+
+        const formData = new FormData();
+        for (const file of selectedFiles) {
+          formData.append('files', file);
+        }
+
+        const title = titleInput.value || 'WenfengAI 生成';
+        const res = await fetch(`/api/generate-slides?title=${encodeURIComponent(title)}`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(`请求失败: ${res.status} - ${error}`);
+        }
+
+        const data = await res.json();
+        const taskId = data.task_id;
+        showStatus(`✅ 任务已创建: ${taskId}<br>⏳ 正在生成 Slide Deck...`, 'info');
+        progressFill.style.width = '30%';
+
+        // 2. 轮询状态
+        await pollStatus(taskId);
+
+      } catch (error) {
+        showStatus(`❌ 错误: ${error.message}`, 'error');
+        progressBar.style.display = 'none';
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '✨ 开始生成 Slide Deck';
+      }
+    });
+
+    async function pollStatus(taskId) {
+      const maxAttempts = 120; // 最多 10 分钟
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 5000)); // 每 5 秒检查
+
+        const res = await fetch(`/api/status/${taskId}`);
+        const task = await res.json();
+
+        progressFill.style.width = `${Math.min(90, 30 + task.progress * 0.6)}%`;
+        showStatus(`⏳ 状态: ${task.status}<br>📊 进度: ${task.progress}%`, 'info');
+
+        if (task.status === 'completed') {
+          progressFill.style.width = '100%';
+          showStatus('🎉 生成完成！', 'success');
+          downloadContainer.innerHTML = `
+            <a href="${task.result_url}" class="download-link" download>
+              📥 下载 PDF
+            </a>
+          `;
+          return;
+        }
+
+        if (task.status === 'failed') {
+          throw new Error(task.error || '生成失败');
+        }
+      }
+      throw new Error('生成超时');
+    }
+  </script>
+</body>
+</html>
