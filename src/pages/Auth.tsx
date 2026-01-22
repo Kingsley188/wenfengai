@@ -46,7 +46,7 @@ export default function Auth() {
         } else {
           toast({
             title: '注册成功',
-            description: '欢迎使用文丰 AI！',
+            description: '欢迎使用WinFlow！',
           });
           navigate('/dashboard');
         }
@@ -93,14 +93,14 @@ export default function Auth() {
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent-foreground" />
             </div>
-            <span className="font-semibold text-xl">文丰 AI</span>
+            <span className="font-semibold text-xl">WinFlow</span>
           </div>
 
           <h1 className="text-3xl font-bold mb-2">
             {isSignUp ? '创建账户' : '欢迎回来'}
           </h1>
           <p className="text-muted-foreground mb-8">
-            {isSignUp ? '开始您的智能创作之旅' : '登录以继续使用文丰 AI'}
+            {isSignUp ? '开始您的智能创作之旅' : '登录以继续使用WinFlow'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">

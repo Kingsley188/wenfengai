@@ -118,7 +118,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                为什么选择文丰 AI？
+                为什么选择WinFlow？
               </h2>
               <p className="text-muted-foreground mb-8 text-lg">
                 我们的 AI 引擎经过大量专业演示文稿的训练，
@@ -177,7 +177,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-border">
         <div className="container mx-auto text-center text-muted-foreground text-sm">
-          © 2024 文丰 AI. All rights reserved.
+          © 2024 WinFlow. All rights reserved.
         </div>
       </footer>
     </div>

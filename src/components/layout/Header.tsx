@@ -26,7 +26,7 @@ export function Header() {
             <Sparkles className="w-4 h-4 text-accent-foreground" />
           </div>
           <span className="font-semibold text-lg text-foreground group-hover:text-accent transition-colors">
-            文丰 AI
+            WinFlow
           </span>
         </Link>
 
