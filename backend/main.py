@@ -30,7 +30,12 @@ from models import User, PPT
 load_dotenv()
 
 # 初始化数据库表
-Base.metadata.create_all(bind=engine)
+# 初始化数据库表
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"⚠️ Warning: Database initialization failed: {e}")
+    print("Application will continue starting, but database features may fail.")
 
 app = FastAPI(
     title="WenfengAI 后端 (MySQL)",

@@ -12,6 +12,8 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./wenfengai.db")
 connect_args = {}
 if "sqlite" in SQLALCHEMY_DATABASE_URL:
     connect_args = {"check_same_thread": False}
+else:
+    connect_args = {"connect_timeout": 60}
 
 # 创建数据库引擎
 engine = create_engine(
