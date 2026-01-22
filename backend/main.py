@@ -25,6 +25,10 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from database import engine, Base, get_db, SessionLocal
 from models import User, PPT
+from supabase_storage import upload_pdf
+
+import logging
+logger = logging.getLogger(__name__)
 
 # 加载环境变量
 load_dotenv()
@@ -408,14 +412,22 @@ async def process_generation(
             public_path = public_dir / f"{task_id}.pdf"
             import shutil
             shutil.copy(output_path, public_path)
-            
+
+            # Upload to Supabase Storage and use the public URL
+            # 如果上传失败，降级使用本地路径
+            try:
+                result_url = upload_pdf(task_id, str(public_path))
+            except Exception as e:
+                logger.warning(f"Supabase upload failed for {task_id}: {e}, using local path")
+                result_url = f"/generated/{task_id}.pdf"
+
             # 完成
             # 注意：最后一步尤其重要，必须重新连接数据库
             update_task_status(
-                task_id, 
-                status="completed", 
-                progress=100, 
-                result_url=f"/generated/{task_id}.pdf"
+                task_id,
+                status="completed",
+                progress=100,
+                result_url=result_url
             )
             
     except Exception as e:

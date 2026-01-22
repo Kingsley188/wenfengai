@@ -8,3 +8,4 @@ python-jose[cryptography]
 passlib[argon2]
 notebooklm-py[browser]
 httpx[socks]
+supabase>=2.0.0,<3.0.0
