@@ -23,7 +23,7 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from database import engine, Base, get_db
+from database import engine, Base, get_db, SessionLocal
 from models import User, PPT
 
 # 加载环境变量
@@ -320,9 +320,6 @@ async def generate_slides(
         "message": "生成任务已创建"
     }
 
-from database import engine, Base, get_db, SessionLocal
-from models import User, PPT
-from typing import Optional
 
 # --- Helper for safe background DB updates ---
 def update_task_status(task_id: str, status: str = None, progress: int = None, result_url: str = None, error_message: str = None):
