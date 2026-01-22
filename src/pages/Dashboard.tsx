@@ -98,7 +98,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleLinkNotebookLM = async () => {
+  const handleLinkWinFlow = async () => {
     setLinking(true);
     try {
       await api.post('/auth/notebooklm/login');
@@ -115,7 +115,7 @@ export default function Dashboard() {
           setLinking(false);
           clearInterval(checkStatus);
           toast({
-            title: 'NotebookLM 已连接',
+            title: 'winFlow 已连接',
             description: '现在您可以开始生成 PPT 了。',
           });
         }
@@ -214,7 +214,7 @@ export default function Dashboard() {
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${nbConnected ? 'bg-success/10 text-success border-success/20' : 'bg-amber-100 text-amber-700 border-amber-200'
                     }`}>
                     <div className={`w-1.5 h-1.5 rounded-full ${nbConnected ? 'bg-success animate-pulse' : 'bg-amber-500'}`} />
-                    NotebookLM {nbConnected ? (accountInfo || '已连接') : '未连接'}
+                    winFlow {nbConnected ? (accountInfo || '已连接') : '未连接'}
                   </div>
                 )}
               </div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={handleLinkNotebookLM}
+                onClick={handleLinkWinFlow}
                 disabled={linking}
                 className="rounded-xl border-border hover:bg-secondary"
               >
@@ -245,7 +245,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* NotebookLM Connection Banner - Only show if definitely disconnected */}
+          {/* winFlow Connection Banner - Only show if definitely disconnected */}
           {nbConnected === false && (
             <div className="mb-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-4 text-amber-900">
@@ -253,14 +253,14 @@ export default function Dashboard() {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">重要：未连接 NotebookLM</h3>
+                  <h3 className="font-bold text-lg">重要：未连接 winFlow</h3>
                   <p className="text-sm opacity-90 leading-relaxed">
                     AI 核心引擎需要链接您的 Google 账号。请点击右侧按钮在本地完成。
                   </p>
                 </div>
               </div>
               <Button
-                onClick={handleLinkNotebookLM}
+                onClick={handleLinkWinFlow}
                 disabled={linking}
                 size="lg"
                 className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-8 font-semibold"

@@ -148,7 +148,7 @@ export default function Result() {
           </div>
           <h1 className="text-2xl font-bold mb-4">AI 正在生成您的 PPT</h1>
           <p className="text-muted-foreground mb-6">
-            请稍候，NotebookLM 正在分析您的资料并生成专业的演示文稿...
+            请稍候，winFlow 正在分析您的资料并生成专业的演示文稿...
           </p>
 
           {/* 进度条 */}
@@ -167,7 +167,7 @@ export default function Result() {
               ) : (
                 <div className="w-4 h-4 rounded-full border border-muted-foreground/30" />
               )}
-              <span>创建 NotebookLM 笔记本</span>
+              <span>创建 winFlow 笔记本</span>
             </div>
             <div className={`flex items-center gap-3 text-sm ${getStepStatus(50) === 'completed' ? 'text-foreground' : 'text-muted-foreground'}`}>
               {getStepStatus(50) === 'completed' ? (
