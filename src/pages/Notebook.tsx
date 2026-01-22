@@ -93,7 +93,7 @@ export default function NotebookPage() {
 
   const fetchNotebook = async () => {
     try {
-      const res = await api.get(`/api/status/${id}`);
+      const res = await api.get(`/status/${id}`);
       const data = res.data;
       setNotebook({
         id: data.task_id,
@@ -232,7 +232,7 @@ export default function NotebookPage() {
       // Use current title input or notebook title
       const title = titleInput || notebook?.title || 'WenfengAI 生成';
 
-      const res = await api.post(`/api/generate-slides?title=${encodeURIComponent(title)}`, formData);
+      const res = await api.post(`/generate-slides?title=${encodeURIComponent(title)}`, formData);
       const data = res.data;
 
       // Navigate to result
