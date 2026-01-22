@@ -320,21 +320,48 @@ async def generate_slides(
         "message": "生成任务已创建"
     }
 
+from database import engine, Base, get_db, SessionLocal
+from models import User, PPT
+from typing import Optional
+
+# --- Helper for safe background DB updates ---
+def update_task_status(task_id: str, status: str = None, progress: int = None, result_url: str = None, error_message: str = None):
+    """
+    更新任务状态的辅助函数。
+    每次调用都创建一个新的短生命周期数据库连接，用完即关。
+    防止在长时间的 AI 生成过程中持有数据库连接导致超时 (Lost connection error)。
+    """
+    db = SessionLocal()
+    try:
+        task = db.query(PPT).filter(PPT.id == task_id).first()
+        if task:
+            if status is not None:
+                task.status = status
+            if progress is not None:
+                task.progress = progress
+            if result_url is not None:
+                task.result_url = result_url
+            if error_message is not None:
+                task.error_message = error_message
+            db.commit()
+    except Exception as e:
+        print(f"⚠️ Error updating task {task_id} in background: {e}")
+        # 这里不抛出异常，以免打断生成流程（虽然状态更新失败了）
+    finally:
+        db.close()
+
 async def process_generation(
     task_id: str,
     file_paths: list[str],
     title: str,
     temp_dir: str
 ):
-    # 获取新的 DB Session (后台任务中)
-    db = next(get_db())
-    task = db.query(PPT).filter(PPT.id == task_id).first()
+    # ❌ 不再在函数开始时获取并持有 Session
+    # db = next(get_db()) 
     
     try:
         # 更新状态：处理中
-        task.status = "processing"
-        task.progress = 10
-        db.commit()
+        update_task_status(task_id, status="processing", progress=10)
         
         # 导入 NotebookLM 客户端
         from notebooklm import NotebookLMClient
@@ -349,59 +376,57 @@ async def process_generation(
                     logger.warning(f"Failed to set output language: {se}")
             
             # 1. 创建笔记本
-            task.progress = 20
-            db.commit()
+            update_task_status(task_id, progress=20)
             nb = await client.notebooks.create(title)
             
             # 2. 添加文件
             for i, file_path in enumerate(file_paths):
-                task.progress = 20 + int(30 * (i + 1) / len(file_paths))
-                db.commit()
+                # 计算进度：20% ~ 50%
+                current_progress = 20 + int(30 * (i + 1) / len(file_paths))
+                update_task_status(task_id, progress=current_progress)
+                # 上传文件等待可能很久
                 await client.sources.add_file(nb.id, Path(file_path), wait=True, wait_timeout=600)
             
             # 3. 生成 Slide Deck
-            task.progress = 60
-            db.commit()
+            update_task_status(task_id, progress=60)
             status = await client.artifacts.generate_slide_deck(
                 nb.id,
                 instructions="请生成一份详细的演示文稿，使用简体中文，包含丰富的内容和专业的结构。"
             )
             
             # 4. 等待生成
-            task.progress = 70
-            db.commit()
+            update_task_status(task_id, progress=70)
             
             # 使用超级长的超时（30分钟），因为服务器生成可能很慢
-            # NotebookLM 可能会在生成过程中稍作暂停，所以我们需要长轮询
+            # 这里是最容易导致 DB 连接超时的步骤
             await client.artifacts.wait_for_completion(nb.id, status.task_id, timeout=1800)
             
             # 5. 下载 PDF
-            task.progress = 85
-            db.commit()
+            update_task_status(task_id, progress=85)
             output_path = Path(temp_dir) / f"{task_id}.pdf"
             await client.artifacts.download_slide_deck(nb.id, str(output_path))
             
             # 6. 移动到 public 目录
-            task.progress = 95
-            db.commit()
+            update_task_status(task_id, progress=95)
             public_path = public_dir / f"{task_id}.pdf"
             import shutil
             shutil.copy(output_path, public_path)
             
             # 完成
-            task.status = "completed"
-            task.progress = 100
-            task.result_url = f"/generated/{task_id}.pdf"
-            task.error_message = None
-            db.commit()
+            # 注意：最后一步尤其重要，必须重新连接数据库
+            update_task_status(
+                task_id, 
+                status="completed", 
+                progress=100, 
+                result_url=f"/generated/{task_id}.pdf"
+            )
             
     except Exception as e:
-        task.status = "failed"
-        task.error_message = str(e)
-        db.commit()
+        print(f"❌ Generation failed for {task_id}: {e}")
+        update_task_status(task_id, status="failed", error_message=str(e))
         
     finally:
-        db.close()
+        # 清理临时文件
         import shutil
         try:
             shutil.rmtree(temp_dir)
